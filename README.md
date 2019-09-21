@@ -6,4 +6,5 @@ C++ implementation of [Weighted Linde-Buzo-Gray Stippling](http://graphics.uni-k
 # TODO
 * Adjust brightness
 * Use better thresholds
+* Support arbitrary size
 * Optimize...
