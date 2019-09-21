@@ -81,10 +81,10 @@ void LindeBuzoGray::Relax(const std::vector<int32_t> &channels)
 	}
 
 	// Jump flooding algorithm (https://www.comp.nus.edu.sg/~tants/jfa.html)
-	int dx[9] = { -1, +0, +1, -1, 0, +1, -1, +0, +1 };
-	int dy[9] = { -1, -1, -1, +0, 0, +0, +1, +1, +1 };
-	int pass = 0;
-	for (int step = W / 2; step > 0; step = step >> 1, ++pass)
+	int32_t dx[9] = { -1, +0, +1, -1, 0, +1, -1, +0, +1 };
+	int32_t dy[9] = { -1, -1, -1, +0, 0, +0, +1, +1, +1 };
+	int32_t pass = 0;
+	for (auto step = W / 2; step > 0; step = step >> 1, ++pass)
 	{
 		// Gather
 		// TODO: parallelize using std::thread
@@ -94,7 +94,7 @@ void LindeBuzoGray::Relax(const std::vector<int32_t> &channels)
 			{
 				const auto center_id = v * W + u;
 				const glm::vec2 position((u + 0.5f) / W, (v + 0.5f) / W);
-				for (int n = 0; n < 9; ++n)
+				for (auto n = 0; n < 9; ++n)
 				{
 					const auto nx = (u + step * dx[n] + W) % W;
 					const auto ny = (v + step * dy[n] + W) % W;
