@@ -1,4 +1,5 @@
 ﻿#include <array>
+#include <cassert>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -33,6 +34,11 @@ void LindeBuzoGray::Initialize()
 	// Set energy
 	Density.Name = "image.png";
 	Density.Load();
+
+	// The current size is limited to 2^x
+	// TODO: support arbitrary size
+	assert(W == Density.Width);
+	assert(W == Density.Height);
 
 	Energy.fill(0.0f);
 	for (auto v = 0; v < W; ++v)
