@@ -52,8 +52,8 @@ void Image::SayGoodBye()
 {
 	SetDefault();
 
-	Data08.~vector();
-	Data32.~vector();
+	Data08.~valarray();
+	Data32.~valarray();
 }
 
 void Image::Create(const int32_t& width, const int32_t& height, const int32_t& channel, const int32_t& bit_per_sample, bool pack)
@@ -69,8 +69,8 @@ void Image::Create(const int32_t& width, const int32_t& height, const int32_t& c
 	BitsPerSample = bit_per_sample;
 
 	const auto num = Width * Height * Channel;
-	if (8 == BitsPerSample) { Data08.resize(num); std::fill(Data08.begin(), Data08.end(), 0); }
-	if (32 == BitsPerSample) { Data32.resize(num); std::fill(Data32.begin(), Data32.end(), 0.0f); }
+	if  (8 == BitsPerSample) { Data08.resize(num); Data08 = 0;    }
+	if (32 == BitsPerSample) { Data32.resize(num); Data32 = 0.0f; }
 }
 
 int32_t Image::Wrap(int32_t p, const int32_t size)
@@ -213,12 +213,12 @@ bool Image::Load()
 
 bool Image::Save()
 {
-	if (!Data32.empty())
+	if (0 < Data32.size())
 	{
 		stbi_write_hdr(Name.data(), Width, Height, Channel, &Data32[0]);
 		return true;
 	}
-	if (!Data08.empty())
+	if (0 < Data08.size())
 	{
 		stbi_write_png(Name.data(), Width, Height, Channel, &Data08[0], Width * Channel);
 		return true;

@@ -2,7 +2,7 @@
 
 #pragma once
 #include <string>
-#include <vector>
+#include <valarray>
 
 #include "..\glm\glm\glm.hpp"
 
@@ -15,8 +15,8 @@ struct Image
 	int32_t Height;
 
 	// Raw Data
-	std::vector<uint8_t> Data08;
-	std::vector<float_t> Data32;
+	std::valarray<uint8_t> Data08;
+	std::valarray<float_t> Data32;
 
 	std::string Name;
 
