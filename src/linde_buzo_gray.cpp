@@ -12,6 +12,12 @@ const auto invalid = std::numeric_limits<uint32_t>::max();
 
 void LindeBuzoGray::Initialize()
 {
+	// The current size is limited to 2^x
+	// TODO: support arbitrary size
+	Density.Load();
+	assert(W == Density.Width);
+	assert(W == Density.Height);
+
 	N = 20000;
 	W = 1024;
 
@@ -32,14 +38,6 @@ void LindeBuzoGray::Initialize()
 	}
 
 	// Set energy
-	Density.Name = "image.png";
-	Density.Load();
-
-	// The current size is limited to 2^x
-	// TODO: support arbitrary size
-	assert(W == Density.Width);
-	assert(W == Density.Height);
-
 	Energy.fill(0);
 	for (auto v = 0; v < W; ++v)
 	{
@@ -66,8 +64,8 @@ float_t distance(const glm::vec2 &a, const glm::vec2 &b)
 
 void LindeBuzoGray::Relax(const std::vector<int32_t> &channels)
 {
-	std::vector<std::pair<int32_t, uint8_t>> next_ids(W*W, std::make_pair(invalid, 0));
-	std::vector<std::pair<int32_t, uint8_t>> site_ids(W*W, std::make_pair(invalid, 0));
+	std::vector<std::pair<uint32_t, uint8_t>> next_ids(W * W, std::make_pair(invalid, 0));
+	std::vector<std::pair<uint32_t, uint8_t>> site_ids(W * W, std::make_pair(invalid, 0));
 
 	// Prepare sites
 	for (const auto ch : channels)
@@ -76,7 +74,7 @@ void LindeBuzoGray::Relax(const std::vector<int32_t> &channels)
 		{
 			const auto u = (int)(W + Sites[ch][i].Position.x * W) % W;
 			const auto v = (int)(W + Sites[ch][i].Position.y * W) % W;
-			site_ids[v * W + u] = std::make_pair((int32_t)i, (uint8_t)ch);
+			site_ids[v * W + u] = std::make_pair((uint32_t)i, (uint8_t)ch);
 		}
 	}
 
@@ -134,7 +132,7 @@ void LindeBuzoGray::Relax(const std::vector<int32_t> &channels)
 		{
 			for (auto u = 0; u < W; ++u)
 			{
-				const auto id = site_ids[v*W + u];
+				const auto id = site_ids[v * W + u];
 				if (id.second == ch)
 				{
 					const glm::vec2 self((u + 0.5f) / W, (v + 0.5f) / W);
@@ -171,6 +169,7 @@ void LindeBuzoGray::Relax(const std::vector<int32_t> &channels)
 	}
 }
 
+#define MULTI_CLASS
 void LindeBuzoGray::Run(const uint32_t frame)
 {
 	std::stringstream ss;
