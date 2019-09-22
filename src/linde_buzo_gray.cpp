@@ -40,7 +40,7 @@ void LindeBuzoGray::Initialize()
 	assert(W == Density.Width);
 	assert(W == Density.Height);
 
-	Energy.fill(0.0f);
+	Energy.fill(0);
 	for (auto v = 0; v < W; ++v)
 	{
 		for (auto u = 0; u < W; ++u)
@@ -57,17 +57,17 @@ void LindeBuzoGray::Initialize()
 	Counts[2] = (int32_t)(Energy[2] / (W * W) * N);
 }
 
-float distance(const glm::vec2 &a, const glm::vec2 &b)
+float_t distance(const glm::vec2 &a, const glm::vec2 &b)
 {
-	const auto dx = 0.5f > std::abs(a.x - b.x) ? std::abs(a.x - b.x) : 1.0f - std::abs(a.x - b.x);
-	const auto dy = 0.5f > std::abs(a.y - b.y) ? std::abs(a.y - b.y) : 1.0f - std::abs(a.y - b.y);
+	const auto dx = 0.5f > std::abs(a.x - b.x) ? std::abs(a.x - b.x) : 1 - std::abs(a.x - b.x);
+	const auto dy = 0.5f > std::abs(a.y - b.y) ? std::abs(a.y - b.y) : 1 - std::abs(a.y - b.y);
 	return dx * dx + dy * dy;
 }
 
 void LindeBuzoGray::Relax(const std::vector<int32_t> &channels)
 {
-	std::vector<std::pair<int32_t, uint8_t>> NextIDs(W*W, std::make_pair(invalid, 0));
-	std::vector<std::pair<int32_t, uint8_t>> SiteIDs(W*W, std::make_pair(invalid, 0));
+	std::vector<std::pair<int32_t, uint8_t>> next_ids(W*W, std::make_pair(invalid, 0));
+	std::vector<std::pair<int32_t, uint8_t>> site_ids(W*W, std::make_pair(invalid, 0));
 
 	// Prepare sites
 	for (const auto ch : channels)
@@ -76,7 +76,7 @@ void LindeBuzoGray::Relax(const std::vector<int32_t> &channels)
 		{
 			const auto u = (int)(W + Sites[ch][i].Position.x * W) % W;
 			const auto v = (int)(W + Sites[ch][i].Position.y * W) % W;
-			SiteIDs[v * W + u] = std::make_pair((int32_t)i, (uint8_t)ch);
+			site_ids[v * W + u] = std::make_pair((int32_t)i, (uint8_t)ch);
 		}
 	}
 
@@ -100,23 +100,23 @@ void LindeBuzoGray::Relax(const std::vector<int32_t> &channels)
 					const auto ny = (v + step * dy[n] + W) % W;
 
 					const auto neighbour_id = ny * W + nx;
-					const auto neighbour = SiteIDs[neighbour_id];
+					const auto neighbour = site_ids[neighbour_id];
 					if (neighbour.first == invalid)
 					{
 						continue;
 					}
-					const auto self = NextIDs[center_id];
+					const auto self = next_ids[center_id];
 					if (self.first == invalid)
 					{
 						// The first one
-						NextIDs[center_id] = neighbour;
+						next_ids[center_id] = neighbour;
 					}
 					else
 					{
 						// Choose the closest one
 						if (distance(position, Sites[neighbour.second][neighbour.first].Position) < distance(position, Sites[self.second][self.first].Position))
 						{
-							NextIDs[center_id] = neighbour;
+							next_ids[center_id] = neighbour;
 						}
 					}
 				}
@@ -124,13 +124,13 @@ void LindeBuzoGray::Relax(const std::vector<int32_t> &channels)
 		}
 
 		// not swap, copy
-		std::copy(NextIDs.begin(), NextIDs.end(), SiteIDs.begin());
+		std::copy(next_ids.begin(), next_ids.end(), site_ids.begin());
 	}
 
 	// Move centers
 	for(const auto ch : channels)
 	{
-		std::vector<glm::vec2> New(Sites[ch].size(), glm::vec2(0));
+		std::vector<glm::vec2> new_positions(Sites[ch].size(), glm::vec2(0));
 
 		for (auto &cell : Sites[ch])
 		{
@@ -141,17 +141,17 @@ void LindeBuzoGray::Relax(const std::vector<int32_t> &channels)
 		{
 			for (auto u = 0; u < W; ++u)
 			{
-				const auto id = SiteIDs[v*W + u];
+				const auto id = site_ids[v*W + u];
 				if (id.second == ch)
 				{
 					const glm::vec2 self((u + 0.5f) / W, (v + 0.5f) / W);
 					const auto c = Sites[ch][id.first].Position;
 					const auto l = std::abs(c.x - self.x);
-					const auto m = std::abs(c.x - self.x + 1.0f);
-					const auto n = std::abs(c.x - self.x - 1.0f);
+					const auto m = std::abs(c.x - self.x + 1);
+					const auto n = std::abs(c.x - self.x - 1);
 					const auto o = std::abs(c.y - self.y);
-					const auto p = std::abs(c.y - self.y + 1.0f);
-					const auto q = std::abs(c.y - self.y - 1.0f);
+					const auto p = std::abs(c.y - self.y + 1);
+					const auto q = std::abs(c.y - self.y - 1);
 					glm::vec2 d =
 					{
 						(l < m && l < n) ? self.x : ((m < n) ? self.x - 1 : self.x + 1),
@@ -159,10 +159,8 @@ void LindeBuzoGray::Relax(const std::vector<int32_t> &channels)
 					};
 					const auto energy = Density.GetColor(d)[ch];
 					const auto center = Density.GetColor(c)[ch];
-					const auto sigma = (size_t)(N / 4) < Sites[ch].size() ? 0.2f : 0.25f;
-					const auto weight = std::exp(-(energy - center) * (energy - center) / (2.0f * sigma * sigma));
-					New[id.first] += d * energy * weight;
-					Sites[ch][id.first].Capacity += energy * weight;
+					new_positions[id.first]          += d * energy;
+					Sites    [ch][id.first].Capacity +=     energy;
 				}
 			}
 		}
@@ -171,11 +169,11 @@ void LindeBuzoGray::Relax(const std::vector<int32_t> &channels)
 		for (size_t j = 0; j < Sites[ch].size(); ++j) if (0 < Sites[ch][j].Capacity)
 		{
 			auto &p = Sites[ch][j].Position;
-			p = New[j] / Sites[ch][j].Capacity;
+			p = new_positions[j] / Sites[ch][j].Capacity;
 			if (0 > p.x) p.x += 1; if (0 > p.y) p.y += 1;
 			if (1 < p.x) p.x -= 1; if (1 < p.y) p.y -= 1;
-			assert(0 <= p.x &&p.x <= 1);
-			assert(0 <= p.y &&p.y <= 1);
+			assert(0 <= p.x && p.x <= 1);
+			assert(0 <= p.y && p.y <= 1);
 		}
 	}
 }
@@ -190,9 +188,9 @@ void LindeBuzoGray::Run(const uint32_t frame)
 	out.Create(W, W, 3, 8);
 
 	std::array<glm::vec3, 3> colors;
-	colors[0] = { 1,0,0 };
-	colors[1] = { 0,1,0 };
-	colors[2] = { 0,0,1 };
+	colors[0] = { 1, 0, 0 };
+	colors[1] = { 0, 1, 0 };
+	colors[2] = { 0, 0, 1 };
 
 	for (auto ch = 0; ch < Channel; ++ch)
 	{
@@ -239,7 +237,6 @@ void LindeBuzoGray::Run(const uint32_t frame)
 			// Keep
 			split.push_back(c);
 		}
-		std::cout << Sites[ch].size() << " " << split.size() << std::endl;
 		Sites[ch].swap(split);
 	}
 
@@ -249,8 +246,5 @@ void LindeBuzoGray::Run(const uint32_t frame)
 	Relax(channels);
 #endif
 
-	std::cout << "r " << Sites[0].size() / (float)N << "\t" << Energy[0] << std::endl;
-	std::cout << "g " << Sites[1].size() / (float)N << "\t" << Energy[1] << std::endl;
-	std::cout << "b " << Sites[2].size() / (float)N << "\t" << Energy[2] << std::endl;
 	out.Save();
 }
