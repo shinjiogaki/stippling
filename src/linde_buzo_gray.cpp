@@ -94,7 +94,6 @@ void LindeBuzoGray::Relax(const std::vector<int32_t> &channels)
 			for (auto u = 0; u < W; ++u)
 			{
 				const auto center_id = v * W + u;
-				const auto self = next_ids[center_id];
 				const glm::vec2 position((u + 0.5f) / W, (v + 0.5f) / W);
 				for (auto n = 0; n < 9; ++n)
 				{
@@ -105,6 +104,8 @@ void LindeBuzoGray::Relax(const std::vector<int32_t> &channels)
 					const auto neighbour = site_ids[neighbour_id];
 					if (neighbour.first == invalid)
 						continue;
+
+					const auto self = next_ids[center_id];
 
 					// The first one
 					if (self.first == invalid)
