@@ -81,18 +81,20 @@ void LindeBuzoGray::Relax(const std::vector<int32_t> &channels)
 	}
 
 	// Jump flooding algorithm (https://www.comp.nus.edu.sg/~tants/jfa.html)
-	int32_t dx[9] = { -1, +0, +1, -1, 0, +1, -1, +0, +1 };
-	int32_t dy[9] = { -1, -1, -1, +0, 0, +0, +1, +1, +1 };
+	// 2^x size limitation is due to this algorithm
+	static const int32_t dx[9] = { -1, +0, +1, -1, 0, +1, -1, +0, +1 };
+	static const int32_t dy[9] = { -1, -1, -1, +0, 0, +0, +1, +1, +1 };
 	int32_t pass = 0;
 	for (auto step = W / 2; step > 0; step = step >> 1, ++pass)
 	{
 		// Gather
-		// TODO: parallelize using std::thread
+		// TODO: parallelize
 		for (auto v = 0; v < W; ++v)
 		{
 			for (auto u = 0; u < W; ++u)
 			{
 				const auto center_id = v * W + u;
+				const auto self = next_ids[center_id];
 				const glm::vec2 position((u + 0.5f) / W, (v + 0.5f) / W);
 				for (auto n = 0; n < 9; ++n)
 				{
@@ -102,23 +104,15 @@ void LindeBuzoGray::Relax(const std::vector<int32_t> &channels)
 					const auto neighbour_id = ny * W + nx;
 					const auto neighbour = site_ids[neighbour_id];
 					if (neighbour.first == invalid)
-					{
 						continue;
-					}
-					const auto self = next_ids[center_id];
+
+					// The first one
 					if (self.first == invalid)
-					{
-						// The first one
 						next_ids[center_id] = neighbour;
-					}
-					else
-					{
-						// Choose the closest one
-						if (distance(position, Sites[neighbour.second][neighbour.first].Position) < distance(position, Sites[self.second][self.first].Position))
-						{
-							next_ids[center_id] = neighbour;
-						}
-					}
+
+					// Choose the closest one
+					else if (distance(position, Sites[neighbour.second][neighbour.first].Position) < distance(position, Sites[self.second][self.first].Position))
+						next_ids[center_id] = neighbour;
 				}
 			}
 		}
@@ -133,9 +127,7 @@ void LindeBuzoGray::Relax(const std::vector<int32_t> &channels)
 		std::vector<glm::vec2> new_positions(Sites[ch].size(), glm::vec2(0));
 
 		for (auto &cell : Sites[ch])
-		{
 			cell.Capacity = 0;
-		}
 
 		for (auto v = 0; v < W; ++v)
 		{
@@ -180,11 +172,12 @@ void LindeBuzoGray::Relax(const std::vector<int32_t> &channels)
 
 void LindeBuzoGray::Run(const uint32_t frame)
 {
-	Image out;
 	std::stringstream ss;
 	ss << "stippling" << std::setw(4) << std::setfill('0') << frame << ".png";
+	std::cout << ss.str() << std::endl;
+
+	Image out;
 	out.Name = ss.str();
-	std::cout << out.Name << std::endl;
 	out.Create(W, W, 3, 8);
 
 	std::array<glm::vec3, 3> colors;
@@ -196,9 +189,7 @@ void LindeBuzoGray::Run(const uint32_t frame)
 	{
 		// Draw dots
 		for (size_t j = 0; j < Sites[ch].size(); ++j)
-		{
 			out.DrawCircle(Sites[ch][j].Position, colors[ch], 2.5f);
-		}
 
 		// Relaxation
 		std::vector<int32_t> channels = { ch };
@@ -213,9 +204,7 @@ void LindeBuzoGray::Run(const uint32_t frame)
 			
 			// Remove
 			if (0.5f * (Energy[ch] / Counts[ch]) > c.Capacity)
-			{
 				continue;
-			}
 
 			// Split
 			if (1.5f * (Energy[ch] / Counts[ch]) < c.Capacity)
@@ -242,7 +231,7 @@ void LindeBuzoGray::Run(const uint32_t frame)
 
 	// Multi class extension
 #ifdef MULTI_CLASS
-	std::vector<int32_t> channels = { 0,1,2 };
+	std::vector<int32_t> channels = { 0, 1, 2 };
 	Relax(channels);
 #endif
 
