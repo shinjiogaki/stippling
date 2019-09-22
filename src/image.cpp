@@ -24,21 +24,6 @@ Image::~Image()
 	SayGoodBye();
 }
 
-void Image::Initialize()
-{
-	// TODO:
-}
-
-void Image::Legitimize()
-{
-	// TODO:
-}
-
-void Image::PrintStats()
-{
-	// TODO:
-}
-
 void Image::SetDefault()
 {
 	Width = 0;

@@ -26,10 +26,7 @@ struct Image
 
 	// Basic Interface
 	void SetDefault();
-	void Initialize();
-	void Legitimize();
 	void SayGoodBye();
-	void PrintStats();
 
 	bool Load();
 	bool Save();
