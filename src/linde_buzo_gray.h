@@ -18,7 +18,7 @@ struct Site
 // Weighted Linde-Buzo-Gray Stippling
 struct LindeBuzoGray
 {
-	static const auto Channel = 3;
+	static const auto Channel = 6;
 
 	int32_t N; // Target Number of Sites
 	int32_t W; // Image Size

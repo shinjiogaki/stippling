@@ -18,8 +18,9 @@ void LindeBuzoGray::Initialize()
 	assert(W == Density.Width);
 	assert(W == Density.Height);
 
-	N = 20000;
-	W = 1024;
+	std::cout << "loaded" << std::endl;
+	N = 2000;
+	W = 512;
 
 	// Generate initial points
 	for (auto ch = 0; ch < Channel; ++ch)
@@ -31,7 +32,7 @@ void LindeBuzoGray::Initialize()
 		{
 			for (auto u = 0; u < S; ++u)
 			{
-				Sites[ch][id].Position = glm::vec2((u + 0.5f) / S, (v + 0.5f) / S);
+				Sites[ch][id].Position = glm::vec2((u + rand() / (float)RAND_MAX) / S, (v + rand() / (float)RAND_MAX) / S);
 				++id;
 			}
 		}
@@ -43,16 +44,19 @@ void LindeBuzoGray::Initialize()
 	{
 		for (auto u = 0; u < W; ++u)
 		{
-			const auto c = Density.GetColor(u, v);
-			Energy[0] += c[0];
-			Energy[1] += c[1];
-			Energy[2] += c[2];
+			const auto col = Density.GetColor(u, v);
+			//Energy[0] += col[0];
+			//Energy[1] += col[1];
+			//Energy[2] += col[2];
+			for (auto c = 0; c < Channel; ++c)
+				Energy[c] += col[c];
 		}
 	}
 
-	Counts[0] = (int32_t)(Energy[0] / (W * W) * N);
-	Counts[1] = (int32_t)(Energy[1] / (W * W) * N);
-	Counts[2] = (int32_t)(Energy[2] / (W * W) * N);
+	for (auto c = 0; c < Channel; ++c)
+	{
+		Counts[c] = (int32_t)(Energy[c] / (W * W) * N);
+	}
 }
 
 float_t distance(const glm::vec2 &a, const glm::vec2 &b)
@@ -180,16 +184,19 @@ void LindeBuzoGray::Run(const uint32_t frame)
 	out.Name = ss.str();
 	out.Create(W, W, 3, 8);
 
-	std::array<glm::vec3, 3> colors;
+	std::array<glm::vec3, Channel> colors;
 	colors[0] = { 1, 0, 0 };
 	colors[1] = { 0, 1, 0 };
 	colors[2] = { 0, 0, 1 };
+	colors[3] = { 1, 1, 0 };
+	colors[4] = { 0, 1, 1 };
+	colors[5] = { 1, 0, 1 };
 
 	for (auto ch = 0; ch < Channel; ++ch)
 	{
 		// Draw dots
 		for (size_t j = 0; j < Sites[ch].size(); ++j)
-			out.DrawCircle(Sites[ch][j].Position, colors[ch], 2.5f);
+			out.DrawCircle(Sites[ch][j].Position, colors[ch], 2.0f);
 
 		// Relaxation
 		std::vector<int32_t> channels = { ch };
@@ -231,7 +238,7 @@ void LindeBuzoGray::Run(const uint32_t frame)
 
 	// Multi class extension
 #ifdef MULTI_CLASS
-	std::vector<int32_t> channels = { 0, 1, 2 };
+	std::vector<int32_t> channels = { 0, 1, 2, 3, 4, 5 };
 	Relax(channels);
 #endif
 
